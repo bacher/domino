@@ -10,7 +10,10 @@ type DominoTileProps = {
 
 export const DominoTile = ({ values, className, tileId }: DominoTileProps) => {
   return (
-    <div className={classNames(styles.root, className)} data-tile-id={tileId}>
+    <div
+      className={classNames(styles.root, "cover", className)}
+      data-tile-id={tileId}
+    >
       <div className={styles.end}>{values[0]}</div>
       <hr className={styles.separator} />
       <div className={styles.end}>{values[1]}</div>

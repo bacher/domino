@@ -27,14 +27,14 @@ export const Board = () => {
 
   const draggables = useRef<Draggable[]>([]);
 
-  function getShiftIndex(index: number) {
+  function getShiftOffset(index: number) {
     const len2 = (gameState.hand.length - 1) / 2;
-    return index - len2;
+    return 50 * (index - len2);
   }
 
   function getHandTilePosition(index: number): { x: number; y: number } {
     return {
-      x: 50 * getShiftIndex(index),
+      x: getShiftOffset(index),
       y: 150,
     };
   }
@@ -49,6 +49,8 @@ export const Board = () => {
   }
 
   useGSAP(
+    // @ts-expect-error: arguments can be used in the future.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (context, contextSafe) => {
       for (const tileId of gameState.tiles) {
         gsap.to(tileSelector(tileId), {
@@ -69,6 +71,10 @@ export const Board = () => {
 
       draggables.current = Draggable.create(".domino-tile", {
         type: "x,y",
+        onDragStart() {
+          const t = this as Draggable;
+          t.target.classList.remove("cover");
+        },
         onDrag() {
           const t = this as Draggable;
 
@@ -82,21 +88,30 @@ export const Board = () => {
           const t = this as Draggable;
           const tileId = t.target.dataset.tileId!;
           const index = gameState.hand.indexOf(tileId);
+          const isInHand = index !== -1;
 
           const isLeftHit = t.hitTest(leftZone.current);
           const isRightHit = t.hitTest(rightZone.current);
 
           if (isLeftHit || isRightHit) {
+            // Validate turn
             const tileIndex = gameState.tiles.indexOf(tileId);
             draggables.current[tileIndex].disable();
 
-            gameState.hand.splice(index, 1);
-            actualizeHandTilesPosition();
+            if (isInHand) {
+              gameState.hand.splice(index, 1);
+              actualizeHandTilesPosition();
+            }
           } else {
-            gsap.to(t.target, {
-              ...getHandTilePosition(index),
-              duration: 0.4,
-            });
+            if (!isInHand) {
+              gameState.hand.push(tileId);
+              actualizeHandTilesPosition();
+            } else {
+              gsap.to(t.target, {
+                ...getHandTilePosition(index),
+                duration: 0.4,
+              });
+            }
           }
 
           leftZone.current!.classList.remove("highlight");
@@ -104,12 +119,26 @@ export const Board = () => {
         },
       });
 
-      gameState.hand = gameState.tiles.slice(0, 5);
+      // for (const drag of draggables.current) {
+      //   // drag.disable();
+      // }
 
-      gameState.hand.forEach((tileId, index) => {
-        gsap.to(tileSelector(tileId), {
-          ...getHandTilePosition(index),
-          delay: 0.1 * index,
+      gameState.hand = gameState.tiles.slice(28 - 5, 28);
+      gameState.hand.reverse();
+
+      gsap.delayedCall(0.5, () => {
+        gameState.hand.forEach((tileId, index) => {
+          const node = containerRef.current!.querySelector(
+            tileSelector(tileId),
+          )!;
+
+          node.classList.remove("cover");
+
+          gsap.to(node, {
+            ...getHandTilePosition(index),
+            delay: 0.1 * index,
+          });
+          draggables.current[index].enable();
         });
       });
     },
