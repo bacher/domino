@@ -18,13 +18,17 @@
 .dropZone {
   width: 200px;
   height: 200px;
-  border: 1px solid gray;
+  border-radius: 10px;
 
   &:global(.hide) {
     display: none;
   }
 
-  &:global(.highlight) {
-    border-color: #646cff;
+  &:global(.dragOver) {
+    border: 1px solid red;
+
+    &:global(.highlight) {
+      border-color: #00e000;
+    }
   }
 }

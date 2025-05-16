@@ -6,7 +6,8 @@ import Draggable from "gsap/Draggable";
 import { DominoTile } from "../DominoTile/DominoTile.tsx";
 import styles from "./Board.module.css";
 import { generateRandomizedDeck } from "./utils.ts";
-import type { DeckTile, TileId } from "./types.ts";
+import type { DeckTile, TileEndValue, TileId } from "./types.ts";
+import { last } from "lodash";
 
 const OVERLAPPING_THRESHOLD = "60%";
 
@@ -33,6 +34,21 @@ export const Board = () => {
   }));
 
   const draggables = useRef<Draggable[]>([]);
+
+  function getTileById(tileId: TileId): DeckTile {
+    const tile = gameState.tiles.find((tile) => tile.tileId === tileId);
+    if (!tile) {
+      throw new Error(`Tile with id ${tileId} not found`);
+    }
+    return tile;
+  }
+
+  function getNormalizedValues(tile: DeckTile): [TileEndValue, TileEndValue] {
+    if (tile.rotated === tile.compensate) {
+      return [tile.values[1], tile.values[0]];
+    }
+    return tile.values;
+  }
 
   function getShiftOffset(index: number) {
     const len2 = (gameState.hand.length - 1) / 2;
@@ -143,6 +159,30 @@ export const Board = () => {
     );
   }
 
+  function rotateTile(tile: DeckTile): void {
+    tile.rotated = !tile.rotated;
+
+    gsap.to(tileSelector(tile.tileId), {
+      rotate: tile.rotated ? 180 : 0,
+      duration: 0.25,
+    });
+  }
+
+  function validateTurn(side: "left" | "right", tileId: TileId): boolean {
+    const currentTile = getTileById(tileId);
+    const currentValues = getNormalizedValues(currentTile);
+
+    const tileOnBoard = getTileById(
+      side === "left"
+        ? gameState.onBoardTiles[0]
+        : last(gameState.onBoardTiles)!,
+    );
+    const [leftValue, rightValue] = getNormalizedValues(tileOnBoard);
+    const targetValue = side === "left" ? leftValue : rightValue;
+
+    return currentValues[1] === targetValue;
+  }
+
   useGSAP(
     // @ts-expect-error: arguments can be used in the future.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -182,14 +222,61 @@ export const Board = () => {
           const isRightHit = checkRightHit(t);
 
           initialZone.current!.classList.toggle("highlight", isInitialHit);
-          leftZone.current!.classList.toggle("highlight", isLeftHit);
-          rightZone.current!.classList.toggle("highlight", isRightHit);
+          initialZone.current!.classList.toggle("dragOver", isInitialHit);
+          leftZone.current!.classList.toggle("dragOver", isLeftHit);
+          rightZone.current!.classList.toggle("dragOver", isRightHit);
+
+          if (isLeftHit) {
+            const currentTile = getTileById(t.target.dataset.tileId!);
+            const currentValues = getNormalizedValues(currentTile);
+
+            const leftTileOnBoard = getTileById(gameState.onBoardTiles[0]);
+            const [leftValue] = getNormalizedValues(leftTileOnBoard);
+
+            if (leftValue === currentValues[1]) {
+              leftZone.current!.classList.add("highlight");
+            } else if (leftValue === currentValues[0]) {
+              rotateTile(currentTile);
+              leftZone.current!.classList.add("highlight");
+            } else {
+              leftZone.current!.classList.remove("highlight");
+            }
+          } else {
+            leftZone.current!.classList.remove("highlight");
+          }
+
+          if (isRightHit) {
+            const currentTile = getTileById(t.target.dataset.tileId!);
+            const currentValues = getNormalizedValues(currentTile);
+
+            const rightTileOnBoard = getTileById(last(gameState.onBoardTiles)!);
+
+            const [, rightValue] = getNormalizedValues(rightTileOnBoard);
+
+            if (rightValue === currentValues[1]) {
+              rightZone.current!.classList.add("highlight");
+            } else if (rightValue === currentValues[0]) {
+              rotateTile(currentTile);
+              rightZone.current!.classList.add("highlight");
+            } else {
+              rightZone.current!.classList.remove("highlight");
+            }
+          } else {
+            rightZone.current!.classList.remove("highlight");
+          }
         },
         onRelease() {
           const t = this as Draggable;
           const tileId = t.target.dataset.tileId!;
-          const index = gameState.hand.indexOf(tileId);
-          const isInHand = index !== -1;
+          const handIndex = gameState.hand.indexOf(tileId);
+          const isInHand = handIndex !== -1;
+
+          initialZone.current!.classList.remove("highlight");
+          initialZone.current!.classList.remove("dragOver");
+          leftZone.current!.classList.remove("highlight");
+          leftZone.current!.classList.remove("dragOver");
+          rightZone.current!.classList.remove("highlight");
+          rightZone.current!.classList.remove("dragOver");
 
           const isInitialHit = checkInitialHit(t);
           const isLeftHit = checkLeftHit(t);
@@ -200,40 +287,45 @@ export const Board = () => {
             const tileIndex = gameState.tiles.findIndex(
               (tile) => tile.tileId === tileId,
             );
-            draggables.current[tileIndex].disable();
 
-            if (isInHand) {
-              gameState.hand.splice(index, 1);
-              actualizeHandTilesPosition();
-            }
+            if (
+              (!isLeftHit || validateTurn("left", tileId)) &&
+              (!isRightHit || validateTurn("right", tileId))
+            ) {
+              draggables.current[tileIndex].disable();
 
-            if (isLeftHit) {
-              gameState.onBoardTiles.unshift(tileId);
-            } else {
-              gameState.onBoardTiles.push(tileId);
-              gameState.tiles[tileIndex].compensate = true;
-            }
-            actualizeOnBoardTilesPosition();
+              if (isInHand) {
+                gameState.hand.splice(handIndex, 1);
+                actualizeHandTilesPosition();
+              }
 
-            if (isInitialHit) {
-              initialZone.current!.classList.add("hide");
-              leftZone.current!.classList.remove("hide");
-              rightZone.current!.classList.remove("hide");
-            }
-          } else {
-            if (!isInHand) {
-              gameState.hand.push(tileId);
-              actualizeHandTilesPosition();
-            } else {
-              gsap.to(t.target, {
-                ...getHandTilePosition(index),
-                duration: 0.4,
-              });
+              if (isLeftHit) {
+                gameState.onBoardTiles.unshift(tileId);
+              } else {
+                gameState.onBoardTiles.push(tileId);
+                gameState.tiles[tileIndex].compensate = true;
+              }
+              actualizeOnBoardTilesPosition();
+
+              if (isInitialHit) {
+                initialZone.current!.classList.add("hide");
+                leftZone.current!.classList.remove("hide");
+                rightZone.current!.classList.remove("hide");
+              }
+
+              return;
             }
           }
 
-          leftZone.current!.classList.remove("highlight");
-          rightZone.current!.classList.remove("highlight");
+          if (!isInHand) {
+            gameState.hand.push(tileId);
+            actualizeHandTilesPosition();
+          } else {
+            gsap.to(t.target, {
+              ...getHandTilePosition(handIndex),
+              duration: 0.4,
+            });
+          }
         },
       });
 
