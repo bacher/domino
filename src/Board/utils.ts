@@ -11,6 +11,7 @@ export function generateRandomizedDeck(): DeckTile[] {
         tileId: `tile:${i * 7 + j}`,
         values: [i as TileEndValue, j as TileEndValue],
         rotated: Math.random() < 0.5,
+        compensate: false,
       });
     }
   }

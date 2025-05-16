@@ -6,4 +6,5 @@ export type DeckTile = {
   tileId: TileId;
   values: [TileEndValue, TileEndValue];
   rotated: boolean;
+  compensate: boolean;
 };

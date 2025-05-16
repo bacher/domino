@@ -69,9 +69,11 @@ export const Board = () => {
     const centerHalf = centerTiles / 2;
     for (let i = 0; i < centerTiles; i += 1) {
       const tileId = gameState.onBoardTiles[shoulder + i];
-      const { rotated } = gameState.tiles.find(
+      const { rotated, compensate } = gameState.tiles.find(
         (tile) => tile.tileId === tileId,
       )!;
+
+      const extraRotation = (rotated ? 180 : 0) + (compensate ? -180 : 0);
 
       const bigGaps = !isEven && shoulder > 0;
       let extra = 0;
@@ -83,21 +85,22 @@ export const Board = () => {
       gsap.to(tileSelector(tileId), {
         x: (TILE_WIDTH + (bigGaps ? 3 : 0)) * (i - centerHalf + 0.5),
         y: TILE_WIDTH * -shoulder + extra,
-        rotate: rotated ? 90 : -90,
+        rotate: 90 + extraRotation,
         duration: 0.15,
       });
     }
 
     for (let i = 0; i < shoulder; i += 1) {
       const tileId = gameState.onBoardTiles[i];
-      const { rotated } = gameState.tiles.find(
+      const { rotated, compensate } = gameState.tiles.find(
         (tile) => tile.tileId === tileId,
       )!;
+      const extraRotation = (rotated ? 180 : 0) + (compensate ? -180 : 0);
 
       gsap.to(tileSelector(tileId), {
         x: -(TILE_HEIGHT / 2 + TILE_WIDTH),
         y: TILE_WIDTH * -i - TILE_WIDTH / 2,
-        rotate: rotated ? 180 : 0,
+        rotate: extraRotation,
         duration: 0.15,
       });
     }
@@ -105,14 +108,15 @@ export const Board = () => {
     for (let i = 0; i < shoulder; i += 1) {
       const tileIndex = shoulder + centerTiles + (shoulder - 1 - i);
       const tileId = gameState.onBoardTiles[tileIndex];
-      const { rotated } = gameState.tiles.find(
+      const { rotated, compensate } = gameState.tiles.find(
         (tile) => tile.tileId === tileId,
       )!;
+      const extraRotation = (rotated ? 180 : 0) + (compensate ? -180 : 0);
 
       gsap.to(tileSelector(tileId), {
         x: TILE_HEIGHT / 2 + TILE_WIDTH,
         y: TILE_WIDTH * -i - TILE_WIDTH / 2,
-        rotate: rotated ? 180 : 0,
+        rotate: 180 + extraRotation,
         duration: 0.15,
       });
     }
@@ -207,6 +211,7 @@ export const Board = () => {
               gameState.onBoardTiles.unshift(tileId);
             } else {
               gameState.onBoardTiles.push(tileId);
+              gameState.tiles[tileIndex].compensate = true;
             }
             actualizeOnBoardTilesPosition();
 
