@@ -51,9 +51,20 @@ export const Board = () => {
     return tile.values;
   }
 
+  function getHardTileInterval() {
+    const handSize = gameState.hand.length;
+    if (handSize < 2) {
+      return TILE_HEIGHT;
+    }
+
+    const w = containerRef.current!.clientWidth;
+    const wa = w - 16 * 2 - TILE_HEIGHT;
+    return Math.min(TILE_HEIGHT, wa / (handSize - 1));
+  }
+
   function getShiftOffset(index: number) {
     const len2 = (gameState.hand.length - 1) / 2;
-    return 50 * (index - len2);
+    return getHardTileInterval() * (index - len2);
   }
 
   function getHandTilePosition(index: number): { x: number; y: number } {
@@ -188,7 +199,8 @@ export const Board = () => {
     // @ts-expect-error: arguments can be used in the future.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (context, contextSafe) => {
-      const screenWidth = Math.min(window.innerWidth, 500);
+      const w = containerRef.current!.clientWidth;
+      const screenWidth = Math.min(w, 500);
 
       leftZone.current!.classList.add("hide");
       rightZone.current!.classList.add("hide");
