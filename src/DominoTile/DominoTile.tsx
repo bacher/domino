@@ -30,14 +30,14 @@ export const DominoTile = ({ values, className, tileId }: DominoTileProps) => {
       <img
         alt=""
         className={styles.end}
-        src={animalsSkin[values[0]]}
+        src={`${import.meta.env.BASE_URL}${animalsSkin[values[0]]}`}
         draggable={false}
       />
       <hr className={styles.separator} />
       <img
         alt=""
         className={classNames(styles.end, styles.end_second)}
-        src={animalsSkin[values[1]]}
+        src={`${import.meta.env.BASE_URL}${animalsSkin[values[1]]}`}
         draggable={false}
       />
     </div>
