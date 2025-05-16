@@ -1,9 +1,22 @@
 import classNames from "classnames";
 
 import styles from "./DominoTile.module.css";
+import type { TileEndValue } from "../Board/types.ts";
+
+type Skin = Record<TileEndValue, string>;
+
+const animalsSkin: Skin = {
+  1: "/skins/animals/cat.png",
+  2: "/skins/animals/chick.png",
+  3: "/skins/animals/dog.png",
+  4: "/skins/animals/frog.png",
+  5: "/skins/animals/hare.png",
+  6: "/skins/animals/pig.png",
+  7: "/skins/animals/swan.png",
+};
 
 type DominoTileProps = {
-  values: [number, number];
+  values: [TileEndValue, TileEndValue];
   className?: string;
   tileId: string;
 };
@@ -11,12 +24,15 @@ type DominoTileProps = {
 export const DominoTile = ({ values, className, tileId }: DominoTileProps) => {
   return (
     <div
-      className={classNames(styles.root, "cover", className)}
+      className={classNames(styles.root, "domino-tile", "cover", className)}
       data-tile-id={tileId}
     >
-      <div className={styles.end}>{values[0]}</div>
+      <img className={styles.end} src={animalsSkin[values[0]]} />
       <hr className={styles.separator} />
-      <div className={styles.end}>{values[1]}</div>
+      <img
+        className={classNames(styles.end, styles.end_second)}
+        src={animalsSkin[values[1]]}
+      />
     </div>
   );
 };

@@ -1,16 +1,17 @@
 import { useRef, useState } from "react";
-import { times } from "lodash";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import Draggable from "gsap/Draggable";
 
 import { DominoTile } from "../DominoTile/DominoTile.tsx";
 import styles from "./Board.module.css";
+import { generateRandomizedDeck } from "./utils.ts";
+import type { DeckTile, TileId } from "./types.ts";
 
-type TileId = string;
+const OVERLAPPING_THRESHOLD = "60%";
 
 type GameState = {
-  tiles: TileId[];
+  tiles: DeckTile[];
   hand: TileId[];
 };
 
@@ -21,7 +22,7 @@ export const Board = () => {
   const rightZone = useRef<HTMLDivElement>(null);
 
   const [gameState] = useState<GameState>(() => ({
-    tiles: times(28).map((index) => `tile:${index}`),
+    tiles: generateRandomizedDeck(),
     hand: [],
   }));
 
@@ -35,7 +36,7 @@ export const Board = () => {
   function getHandTilePosition(index: number): { x: number; y: number } {
     return {
       x: getShiftOffset(index),
-      y: 150,
+      y: 146,
     };
   }
 
@@ -52,11 +53,12 @@ export const Board = () => {
     // @ts-expect-error: arguments can be used in the future.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (context, contextSafe) => {
-      for (const tileId of gameState.tiles) {
+      for (const { tileId, rotated } of gameState.tiles) {
         gsap.to(tileSelector(tileId), {
           duration: 0,
           x: -160,
           y: -140,
+          rotate: rotated ? 180 : 0,
         });
       }
 
@@ -78,10 +80,16 @@ export const Board = () => {
         onDrag() {
           const t = this as Draggable;
 
-          const isLeftOverlapped = t.hitTest(leftZone.current, "99%");
+          const isLeftOverlapped = t.hitTest(
+            leftZone.current,
+            OVERLAPPING_THRESHOLD,
+          );
           leftZone.current!.classList.toggle("highlight", isLeftOverlapped);
 
-          const isRightOverlapped = t.hitTest(rightZone.current, "99%");
+          const isRightOverlapped = t.hitTest(
+            rightZone.current,
+            OVERLAPPING_THRESHOLD,
+          );
           rightZone.current!.classList.toggle("highlight", isRightOverlapped);
         },
         onRelease() {
@@ -90,12 +98,17 @@ export const Board = () => {
           const index = gameState.hand.indexOf(tileId);
           const isInHand = index !== -1;
 
-          const isLeftHit = t.hitTest(leftZone.current);
-          const isRightHit = t.hitTest(rightZone.current);
+          const isLeftHit = t.hitTest(leftZone.current, OVERLAPPING_THRESHOLD);
+          const isRightHit = t.hitTest(
+            rightZone.current,
+            OVERLAPPING_THRESHOLD,
+          );
 
           if (isLeftHit || isRightHit) {
             // Validate turn
-            const tileIndex = gameState.tiles.indexOf(tileId);
+            const tileIndex = gameState.tiles.findIndex(
+              (tile) => tile.tileId === tileId,
+            );
             draggables.current[tileIndex].disable();
 
             if (isInHand) {
@@ -119,11 +132,9 @@ export const Board = () => {
         },
       });
 
-      // for (const drag of draggables.current) {
-      //   // drag.disable();
-      // }
-
-      gameState.hand = gameState.tiles.slice(28 - 5, 28);
+      gameState.hand = gameState.tiles
+        .slice(28 - 5, 28)
+        .map((tile) => tile.tileId);
       gameState.hand.reverse();
 
       gsap.delayedCall(0.5, () => {
@@ -149,13 +160,8 @@ export const Board = () => {
     <div ref={containerRef} className={styles.board}>
       <div ref={leftZone} className={styles.dropZone}></div>
       <div ref={rightZone} className={styles.dropZone}></div>
-      {gameState.tiles.map((tileId) => (
-        <DominoTile
-          key={tileId}
-          values={[1, 6]}
-          className="domino-tile"
-          tileId={tileId}
-        />
+      {gameState.tiles.map(({ tileId, values }) => (
+        <DominoTile key={tileId} values={values} tileId={tileId} />
       ))}
     </div>
   );
