@@ -10,6 +10,9 @@ import type { DeckTile, TileId } from "./types.ts";
 
 const OVERLAPPING_THRESHOLD = "60%";
 
+const TILE_WIDTH = 94;
+const TILE_HEIGHT = 50;
+
 type GameState = {
   tiles: DeckTile[];
   onBoardTiles: TileId[];
@@ -39,7 +42,7 @@ export const Board = () => {
   function getHandTilePosition(index: number): { x: number; y: number } {
     return {
       x: getShiftOffset(index),
-      y: 146,
+      y: 170,
     };
   }
 
@@ -53,26 +56,65 @@ export const Board = () => {
   }
 
   function actualizeOnBoardTilesPosition() {
-    if (gameState.onBoardTiles.length === 1) {
-      gameState.onBoardTiles.forEach((tileId) => {
-        gsap.to(tileSelector(tileId), {
-          x: 0,
-          y: 0,
-          rotate: 90,
-          duration: 0.15,
-        });
+    const count = gameState.onBoardTiles.length;
+
+    if (count === 0) {
+      return;
+    }
+
+    const isEven = count % 2 === 0;
+    const centerTiles = Math.min(count, isEven ? 2 : 3);
+    const shoulder = (count - centerTiles) / 2;
+
+    const centerHalf = centerTiles / 2;
+    for (let i = 0; i < centerTiles; i += 1) {
+      const tileId = gameState.onBoardTiles[shoulder + i];
+      const { rotated } = gameState.tiles.find(
+        (tile) => tile.tileId === tileId,
+      )!;
+
+      const bigGaps = !isEven && shoulder > 0;
+      let extra = 0;
+      if (count > 3) {
+        extra =
+          TILE_HEIGHT / 2 + TILE_HEIGHT * (isEven ? 0 : -1) - (bigGaps ? 1 : 0);
+      }
+
+      gsap.to(tileSelector(tileId), {
+        x: (TILE_WIDTH + (bigGaps ? 3 : 0)) * (i - centerHalf + 0.5),
+        y: TILE_WIDTH * -shoulder + extra,
+        rotate: rotated ? 90 : -90,
+        duration: 0.15,
       });
-    } else if (gameState.onBoardTiles.length === 2) {
-      gameState.onBoardTiles.forEach((tileId, index) => {
-        gsap.to(tileSelector(tileId), {
-          x: 94 * (index - 0.5),
-          y: 0,
-          rotate: 90,
-          duration: 0.15,
-        });
+    }
+
+    for (let i = 0; i < shoulder; i += 1) {
+      const tileId = gameState.onBoardTiles[i];
+      const { rotated } = gameState.tiles.find(
+        (tile) => tile.tileId === tileId,
+      )!;
+
+      gsap.to(tileSelector(tileId), {
+        x: -(TILE_HEIGHT / 2 + TILE_WIDTH),
+        y: TILE_WIDTH * -i - TILE_WIDTH / 2,
+        rotate: rotated ? 180 : 0,
+        duration: 0.15,
       });
-    } else {
-      // TODO
+    }
+
+    for (let i = 0; i < shoulder; i += 1) {
+      const tileIndex = shoulder + centerTiles + (shoulder - 1 - i);
+      const tileId = gameState.onBoardTiles[tileIndex];
+      const { rotated } = gameState.tiles.find(
+        (tile) => tile.tileId === tileId,
+      )!;
+
+      gsap.to(tileSelector(tileId), {
+        x: TILE_HEIGHT / 2 + TILE_WIDTH,
+        y: TILE_WIDTH * -i - TILE_WIDTH / 2,
+        rotate: rotated ? 180 : 0,
+        duration: 0.15,
+      });
     }
   }
 
@@ -107,19 +149,19 @@ export const Board = () => {
       for (const { tileId, rotated } of gameState.tiles) {
         gsap.to(tileSelector(tileId), {
           duration: 0,
-          x: -160,
-          y: -140,
+          x: -200,
+          y: -160,
           rotate: rotated ? 180 : 0,
         });
       }
 
       gsap.to(leftZone.current, {
         duration: 0,
-        x: -100,
+        x: -120,
       });
       gsap.to(rightZone.current, {
         duration: 0,
-        x: 100,
+        x: 120,
       });
 
       draggables.current = Draggable.create(".domino-tile", {

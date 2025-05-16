@@ -27,11 +27,18 @@ export const DominoTile = ({ values, className, tileId }: DominoTileProps) => {
       className={classNames(styles.root, "domino-tile", "cover", className)}
       data-tile-id={tileId}
     >
-      <img className={styles.end} src={animalsSkin[values[0]]} />
+      <img
+        alt=""
+        className={styles.end}
+        src={animalsSkin[values[0]]}
+        draggable={false}
+      />
       <hr className={styles.separator} />
       <img
+        alt=""
         className={classNames(styles.end, styles.end_second)}
         src={animalsSkin[values[1]]}
+        draggable={false}
       />
     </div>
   );
