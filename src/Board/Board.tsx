@@ -8,6 +8,7 @@ import styles from "./Board.module.css";
 import { generateRandomizedDeck } from "./utils.ts";
 import type { DeckTile, TileEndValue, TileId } from "./types.ts";
 import { last } from "lodash";
+import classNames from "classnames";
 
 const OVERLAPPING_THRESHOLD = "60%";
 
@@ -187,13 +188,15 @@ export const Board = () => {
     // @ts-expect-error: arguments can be used in the future.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (context, contextSafe) => {
+      const screenWidth = Math.min(window.innerWidth, 500);
+
       leftZone.current!.classList.add("hide");
       rightZone.current!.classList.add("hide");
 
       for (const { tileId, rotated } of gameState.tiles) {
         gsap.to(tileSelector(tileId), {
           duration: 0,
-          x: -200,
+          x: -screenWidth * 0.4,
           y: -160,
           rotate: rotated ? 180 : 0,
         });
@@ -355,7 +358,10 @@ export const Board = () => {
 
   return (
     <div ref={containerRef} className={styles.board}>
-      <div ref={initialZone} className={styles.dropZone}></div>
+      <div
+        ref={initialZone}
+        className={classNames(styles.dropZone, styles.dropZone_initial)}
+      ></div>
       <div ref={leftZone} className={styles.dropZone}></div>
       <div ref={rightZone} className={styles.dropZone}></div>
       {gameState.tiles.map(({ tileId, values }) => (

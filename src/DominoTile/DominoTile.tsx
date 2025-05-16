@@ -6,13 +6,13 @@ import type { TileEndValue } from "../Board/types.ts";
 type Skin = Record<TileEndValue, string>;
 
 const animalsSkin: Skin = {
-  1: "/skins/animals/cat.png",
-  2: "/skins/animals/chick.png",
-  3: "/skins/animals/dog.png",
-  4: "/skins/animals/frog.png",
-  5: "/skins/animals/hare.png",
-  6: "/skins/animals/pig.png",
-  7: "/skins/animals/swan.png",
+  1: "skins/animals/cat.png",
+  2: "skins/animals/chick.png",
+  3: "skins/animals/dog.png",
+  4: "skins/animals/frog.png",
+  5: "skins/animals/hare.png",
+  6: "skins/animals/pig.png",
+  7: "skins/animals/swan.png",
 };
 
 type DominoTileProps = {

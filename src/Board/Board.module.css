@@ -3,7 +3,8 @@
   justify-content: stretch;
   align-items: stretch;
   gap: 16px;
-  width: 500px;
+  width: 100%;
+  max-width: 500px;
   height: 500px;
   border: 1px solid gray;
   user-select: none;
@@ -16,7 +17,8 @@
 }
 
 .dropZone {
-  width: 200px;
+  width: 44vw;
+  max-width: 200px;
   height: 200px;
   border-radius: 10px;
 
@@ -31,4 +33,9 @@
       border-color: #00e000;
     }
   }
+}
+
+.dropZone_initial {
+  width: 66vw;
+  max-width: 300px;
 }
